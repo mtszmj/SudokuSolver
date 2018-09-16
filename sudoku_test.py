@@ -195,7 +195,7 @@ class RegionTest(unittest.TestCase):
 class SudokuTest(unittest.TestCase):
 
     def setUp(self):
-        pass
+        Cell.MAX_VALUE = 9
 
     def test_empty_sudoku(self):
         sudoku = Sudoku()
@@ -439,6 +439,50 @@ class SudokuTest(unittest.TestCase):
         165394872
         932678415
         478521369
+        """.replace(' ', '').replace('\n', '', 1)
+        self.assertEqual(solver.sudoku.to_string(), solution)
+
+    def test_solve_6x6(self):
+        puzzle = """
+        100000
+        020000
+        003000
+        000400
+        000050
+        000000
+        """.replace(' ', '').replace('\n', '', 1)
+        sudoku = SudokuFactory.create_from_string(puzzle)
+        self.assertEqual(sudoku.to_string(), puzzle)
+
+        solver = SudokuSolver(sudoku)
+        solver.solve()
+        solution = """
+        134265
+        526134
+        243516
+        615423
+        461352
+        352641
+        """.replace(' ', '').replace('\n', '', 1)
+        self.assertEqual(solver.sudoku.to_string(), solution)
+
+    def test_solve_4x4(self):
+        puzzle = """
+        1000
+        0200
+        0030
+        0004
+        """.replace(' ', '').replace('\n', '', 1)
+        sudoku = SudokuFactory.create_from_string(puzzle)
+        self.assertEqual(sudoku.to_string(), puzzle)
+
+        solver = SudokuSolver(sudoku)
+        solver.solve()
+        solution = """
+        1342
+        4213
+        2431
+        3124
         """.replace(' ', '').replace('\n', '', 1)
         self.assertEqual(solver.sudoku.to_string(), solution)
 

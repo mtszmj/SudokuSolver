@@ -290,11 +290,11 @@ class Sudoku(object):
     Attributes:
         cells (List[List[Cell]]):
         _size (int)
-        _rect_x (int)
-        _rect_y (int)
+        _rect_width (int)
+        _rect_height (int)
     """
 
-    def __init__(self, size=9, cells=None):
+    def __init__(self, size=9, cells=None, rect_width=3, rect_height=3):
         if cells is None:
             self.cells = [[Cell(r, c) for c in range(size)] for r in range(size)]
             self._size = size
@@ -305,11 +305,11 @@ class Sudoku(object):
         self._undo_redo = UndoRedo()
 
         # TODO add setting of rect_x and rect_y by __init__ arguments
-        self._rect_x = 3
-        self._rect_y = 3
+        self._rect_width = rect_width
+        self._rect_height = rect_height
 
         rows = columns = self._size
-        rectangles = (self._size ** 2) // (self._rect_x * self._rect_y)  # number of rectangles = board size / rect_size
+        rectangles = (self._size ** 2) // (self._rect_width * self._rect_height)  # number of rectangles = board size / rect_size
         self._regions = [Region() for x in range(rows + columns + rectangles)]  # generate regions for rows, cols, rects
 
         for row in range(self._size):
@@ -318,14 +318,14 @@ class Sudoku(object):
                 self._regions[rows+col].add(self.cells[row][col])   # populate column regions
 
         # populate rectangle regions
-        x_size = self._size // self._rect_x
-        y_size = self._size // self._rect_y
+        width_size = self._size // self._rect_width
+        height_size = self._size // self._rect_height
         reg = self._size * 2 - 1
-        for x_start in range(x_size):
-            for y_start in range(y_size):
+        for x_start in range(height_size):
+            for y_start in range(width_size):
                 reg += 1
-                for x in range(x_start * x_size, (x_start+1) * x_size):
-                    for y in range((y_start * y_size), (y_start+1) * y_size):
+                for x in range(x_start * width_size, (x_start+1) * width_size):
+                    for y in range((y_start * height_size), (y_start+1) * height_size):
                         self._regions[reg].add(self.cells[x][y])
 
         self.update_possible_values_in_all_regions()
@@ -356,7 +356,7 @@ class Sudoku(object):
         if (0 <= row < self.size) and (0 <= column < self.size):
             return True
         else:
-            raise AttributeError("Row or column out of range: <0,{}>".format(self.size - 1))
+            raise AttributeError("Row or column out of range: <0,{}>, ({},{})".format(self.size - 1, row, column))
 
     def get_cell_value(self, row: int, column: int) -> int:
         """Return a value of a cell.
@@ -533,7 +533,7 @@ class SudokuSolver(object):
         Returns:
             str: Diagnostic string.
         """
-        return sudoku.to_string()
+        return self.sudoku.to_string()
 
 
 class Pattern(object):
@@ -684,6 +684,7 @@ class BruteForce(Pattern):
             bool: True if sudoku was solved. Otherwise False.
         """
         self._root = self.SudokuNode(sudoku)
+        self.SudokuNode.sudoku_solved = None
         if not sudoku.is_wrong():
             self._root.solve()
             if self.SudokuNode.sudoku_solved is not None:
@@ -771,6 +772,13 @@ class BruteForce(Pattern):
 
 
 class SudokuFactory(object):
+    """Sudoku factory class.
+
+    Static attributes:
+        POSSIBLE_SIZES (dict(int: Tuple(int, int))): dictionary holding possible sizes of Sudoku as keys and size of
+        rectangle as values.
+    """
+    POSSIBLE_SIZES = {4: (2, 2), 6: (3, 2), 9: (3, 3)}
 
     @staticmethod
     def create_from_string(sudoku: str):
@@ -787,27 +795,43 @@ class SudokuFactory(object):
         000600005
         000521000'
 
+        or:
+        '134265
+        526134
+        243516
+        615423
+        461352
+        352641'
+
         Args:
             sudoku (str): Sudoku written as a string.
+
+        Raises:
+            ValueError: raise if string is in incorrect format or size of sudoku is not included in POSSIBLE_SIZES.
         """
         lines = []
         for line in sudoku.splitlines():
             line = line.strip()
-            if len(line) == 9 and line.isdigit():
+            if line.isdigit():
                 lines.append(line)
-        if len(lines) != 9:
-            raise ValueError("Incorrect input string")
 
-        cells = [[None for _ in range(0, 9)] for _ in range(0, 9)]
-        for row in range(0, 9):
-            for col in range(0, 9):
-                column = lines[row]
-                value = int(column[col])
+        size = len(lines)
+        for line in lines:
+            if len(line) != size or size not in SudokuFactory.POSSIBLE_SIZES:
+                raise ValueError("Incorrect input string")
+
+        Cell.MAX_VALUE = size
+        cells = [[None for _ in range(0, size)] for _ in range(0, size)]
+        for row in range(0, size):
+            for col in range(0, size):
+                value = int(lines[row][col])
                 cells[row][col] = Cell(row, col, False, value) if value else Cell(row, col)
 
+        # is it ok to shorten it to:
         # cells = [[Cell(row, col, False, int(lines[row][col])) if int(lines[row][col])
         #           else Cell(row, col) for col in range(0, 9)] for row in range(0, 9)]
-        return Sudoku(cells=cells)
+        return Sudoku(size=size, cells=cells, rect_width=SudokuFactory.POSSIBLE_SIZES[size][0],
+                      rect_height=SudokuFactory.POSSIBLE_SIZES[size][1])
 
 
 if __name__ == '__main__':
