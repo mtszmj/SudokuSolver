@@ -256,7 +256,7 @@ class UndoRedo(object):
         """Return length of redo list."""
         return len(self._redo)
 
-    def undo(self) -> Tuple[int, int, int, int, str, int]:
+    def undo(self) -> Tuple[int, int, int, int, str, int, int]:
         """Get last action performed on Sudoku as: row, column, value before writing, value written, method, number of
         remaining actions in undo list and number of actions in redo list. Returned action is also written to redo list.
         It means that updating Cell's value with returned data should be performed without calling add_action function,
@@ -304,7 +304,6 @@ class Sudoku(object):
 
         self._undo_redo = UndoRedo()
 
-        # TODO add setting of rect_x and rect_y by __init__ arguments
         self._rect_width = rect_width
         self._rect_height = rect_height
 

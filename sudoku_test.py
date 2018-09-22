@@ -192,6 +192,69 @@ class RegionTest(unittest.TestCase):
         self.assertTrue(region.is_not_possible_to_solve())
 
 
+class UndoRedoTest(unittest.TestCase):
+
+    def test_action_added(self):
+        row = 1
+        column = 2
+        old_value = 0
+        value = 3
+        method = 'manual'
+        undo_redo = UndoRedo()
+
+        undo_redo.add_action(row, column, old_value, value, method)
+        self.assertTrue(undo_redo.undo_length() == 1)
+
+        action = (1, 3, 0, 4, 'manual')
+        undo_redo.add_action(*action)
+        self.assertTrue(undo_redo.undo_length() == 2)
+
+    def test_undo_redo(self):
+        undo_redo = UndoRedo()
+        action_1 = (1, 2, 3, 4, 'manual')
+        action_2 = (2, 3, 4, 5, 'manually')
+        undo_redo.add_action(*action_1)
+        undo_redo.add_action(*action_2)
+
+        self.assertTrue(undo_redo.undo_length() == 2)
+        self.assertTrue(undo_redo.redo_length() == 0)
+
+        row, column, old_value, value, method, undo_length, redo_length = undo_redo.undo()
+        self.assertEqual(row, 2)
+        self.assertEqual(column, 3)
+        self.assertEqual(old_value, 4)
+        self.assertEqual(value, 5)
+        self.assertEqual(method, 'manually')
+        self.assertEqual(undo_length, 1)
+        self.assertEqual(redo_length, 1)
+
+        row, column, old_value, value, method, undo_length, redo_length = undo_redo.undo()
+        self.assertEqual(row, 1)
+        self.assertEqual(column, 2)
+        self.assertEqual(old_value, 3)
+        self.assertEqual(value, 4)
+        self.assertEqual(method, 'manual')
+        self.assertEqual(undo_length, 0)
+        self.assertEqual(redo_length, 2)
+
+        row, column, old_value, value, method, undo_length, redo_length = undo_redo.redo()
+        self.assertEqual(row, 1)
+        self.assertEqual(column, 2)
+        self.assertEqual(old_value, 3)
+        self.assertEqual(value, 4)
+        self.assertEqual(method, 'manual')
+        self.assertEqual(undo_length, 1)
+        self.assertEqual(redo_length, 1)
+
+        row, column, old_value, value, method, undo_length, redo_length = undo_redo.redo()
+        self.assertEqual(row, 2)
+        self.assertEqual(column, 3)
+        self.assertEqual(old_value, 4)
+        self.assertEqual(value, 5)
+        self.assertEqual(method, 'manually')
+        self.assertEqual(undo_length, 2)
+        self.assertEqual(redo_length, 0)
+
 class SudokuTest(unittest.TestCase):
 
     def setUp(self):
