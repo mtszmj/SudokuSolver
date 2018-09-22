@@ -565,11 +565,10 @@ class SudokuTest(unittest.TestCase):
          6, 0, 9, 5, 0, 0,11, 0,10, 0, 0, 7
         """.replace(' ', '').replace('\n', '', 1)
         sudoku = SudokuFactory.create_from_string(puzzle)
-        print(sudoku.to_string())
 
         solver = SudokuSolver(sudoku)
         solver.solve()
-        print(solver.sudoku.to_string())
+        self.assertTrue(solver.sudoku.is_solved())
 
     def test_empty_sudoku(self):
         puzzle = """
