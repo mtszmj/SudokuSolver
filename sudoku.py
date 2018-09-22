@@ -471,8 +471,15 @@ class Sudoku(object):
         """
         sudoku = ""
         for row in self.cells:
+            counter = 1
             for cell in row:
-                sudoku += str(cell.value)
+                if self._size < 10:
+                    sudoku += str(cell.value)
+                else:
+                    sudoku += "{:2d}".format(cell.value)
+                    if counter < self._size:
+                        sudoku += ','
+                        counter += 1
             sudoku += "\n"
         return sudoku
 
@@ -709,6 +716,7 @@ class BruteForce(Pattern):
         sudoku_solved = None
         patterns = Pattern.get_patterns_without_brute_force()
         METHOD = 'BruteForce'
+        _LOG_COUNTER = 0
 
         def __init__(self, sudoku: Sudoku, row=-1, column=-1, value=-1):
             """Initiate the SudokuNode with sudoku and optional arguments for writing value to a cell.
@@ -746,7 +754,6 @@ class BruteForce(Pattern):
                 solve_again = True
                 while solve_again:
                     solve_again = pattern.solve(self._sudoku, False)
-
             if self._sudoku.is_solved():
                 BruteForce.SudokuNode.sudoku_solved = self._sudoku
                 return True
@@ -766,10 +773,10 @@ class BruteForce(Pattern):
                     break
 
             for child in self._children:
-                return child.solve()
-                # result = child.solve()
-                # if result:
-                #     return True
+                result = child.solve()
+                if result:
+                    return True
+            return False
 
 
 class SudokuFactory(object):
@@ -779,7 +786,8 @@ class SudokuFactory(object):
         POSSIBLE_SIZES (dict(int: Tuple(int, int))): dictionary holding possible sizes of Sudoku as keys and size of
         rectangle as values.
     """
-    POSSIBLE_SIZES = {4: (2, 2), 6: (3, 2), 9: (3, 3)}
+    POSSIBLE_SIZES = {4: (2, 2), 6: (3, 2), 9: (3, 3), 12: (4, 3)}
+    SEPARATOR = ','
 
     @staticmethod
     def create_from_string(sudoku: str):
@@ -804,6 +812,8 @@ class SudokuFactory(object):
         461352
         352641'
 
+        For bigger sudoku than 9, values should be separated by SudokuFactory.SEPARATOR - ','.
+
         Args:
             sudoku (str): Sudoku written as a string.
 
@@ -811,14 +821,19 @@ class SudokuFactory(object):
             ValueError: raise if string is in incorrect format or size of sudoku is not included in POSSIBLE_SIZES.
         """
         lines = []
+        with_separator = False
         for line in sudoku.splitlines():
             line = line.strip()
-            if line.isdigit():
-                lines.append(line)
+            if not with_separator and SudokuFactory.SEPARATOR in line:
+                with_separator = True
+            if with_separator and line.replace(SudokuFactory.SEPARATOR, '').isdigit():
+                lines.append(line.split(sep=SudokuFactory.SEPARATOR))
+            elif line.isdigit():
+                lines.append(list(line))
 
         size = len(lines)
         for line in lines:
-            if len(line) != size or size not in SudokuFactory.POSSIBLE_SIZES:
+            if (len(line) != size) or (size not in SudokuFactory.POSSIBLE_SIZES):
                 raise ValueError("Incorrect input string")
 
         Cell.MAX_VALUE = size
@@ -836,7 +851,7 @@ class SudokuFactory(object):
 
 
 if __name__ == '__main__':
-    sud = """
+   sud = """
         293040100
         516230740
         847156000
@@ -847,7 +862,7 @@ if __name__ == '__main__':
         000600005
         000521000
         """
-    sudoku = SudokuFactory.create_from_string(sud)
-    sudoku_solver = SudokuSolver(sudoku)
-    sudoku_solver.solve()
-    print(sudoku_solver.to_string())
+   sudoku = SudokuFactory.create_from_string(sud)
+   sudoku_solver = SudokuSolver(sudoku)
+   sudoku_solver.solve()
+   print(sudoku_solver.to_string())
