@@ -288,12 +288,11 @@ class Sudoku(object):
     """Class that contains Sudoku board - two dimensional array of cells.
 
     Attributes:
-        cells (List[List[Cell]]): List of cells in Sudoku.
-        _size (int): size of the Sudoku.
-        _rect_width (int): Width of each rectangle region (3 for Sudoku 9x9).
-        _rect_height (int): Height of each rectangle region (3 for Sudoku 9x9).
-        _undo_redo (UndoRedo): Container storing actions done on Sudoku.
-        __regions (List[Region]): List of regions (rows, columns, rectangles).
+        cells (List[List[Cell]]):
+        _size (int)
+        _rect_width (int)
+        _rect_height (int)
+        _undo_redo
     """
 
     def __init__(self, size=9, cells=None, rect_width=3, rect_height=3):
