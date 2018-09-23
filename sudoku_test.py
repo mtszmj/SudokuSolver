@@ -549,6 +549,89 @@ class SudokuTest(unittest.TestCase):
         """.replace(' ', '').replace('\n', '', 1)
         self.assertEqual(solver.sudoku.to_string(), solution)
 
+    def test_solve_12x12(self):
+        puzzle = """
+         5, 0, 0,10, 0,12, 0, 0, 1, 7, 0,11
+         0, 3, 2, 0, 0, 0, 0, 6, 0,10, 4, 0
+         1, 6, 0, 0, 0, 0, 0, 0, 0, 0,12, 0
+         3, 0, 0, 0,11, 0, 6, 0, 0, 0, 0, 8
+         0, 4, 0, 0,12, 1, 0, 7,11, 0, 0, 0
+         0, 0, 0, 6, 0,10, 4, 8, 0, 0, 0,12
+         2, 0, 0, 0,10, 4, 8, 0, 6, 0, 0, 0
+         0, 0, 0, 4, 6, 0, 7,11, 0, 0, 1, 0
+        11, 0, 0, 0, 0, 3, 0, 2, 0, 0, 0,10
+         0,10, 0, 0, 0, 0, 0, 0, 0, 0, 8, 4
+         0, 7, 8, 0, 9, 0, 0, 0, 0, 2,11, 0
+         6, 0, 9, 5, 0, 0,11, 0,10, 0, 0, 7
+        """.replace(' ', '').replace('\n', '', 1)
+        sudoku = SudokuFactory.create_from_string(puzzle)
+
+        solver = SudokuSolver(sudoku)
+        solver.solve()
+        self.assertTrue(solver.sudoku.is_solved())
+
+    def test_empty_sudoku(self):
+        puzzle = """
+        000000
+        000000
+        000000
+        000000
+        000000
+        000000
+        """.replace(' ', '').replace('\n', '', 1)
+        sudoku = SudokuFactory.create_from_string(puzzle)
+        solver = SudokuSolver(sudoku)
+        solver.solve()
+        self.assertTrue(sudoku.is_solved())
+
+        puzzle = """
+        0000
+        0000
+        0000
+        0000
+        """.replace(' ', '').replace('\n', '', 1)
+        sudoku = SudokuFactory.create_from_string(puzzle)
+        solver = SudokuSolver(sudoku)
+        solver.solve()
+        self.assertTrue(sudoku.is_solved())
+
+        puzzle = """
+        000000000
+        000000000
+        000000000
+        000000000
+        000000000
+        000000000
+        000000000
+        000000000
+        000000000       
+        """.replace(' ', '').replace('\n', '', 1)
+        sudoku = SudokuFactory.create_from_string(puzzle)
+        solver = SudokuSolver(sudoku)
+        solver.solve()
+        self.assertTrue(sudoku.is_solved())
+
+        check_12x12 = False
+        if check_12x12:
+            puzzle = """
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+            """.replace(' ', '').replace('\n', '', 1)
+            sudoku = SudokuFactory.create_from_string(puzzle)
+            solver = SudokuSolver(sudoku)
+            solver.solve()
+            self.assertTrue(sudoku.is_solved())
+
 
 if __name__ == '__main__':
     unittest.main()
