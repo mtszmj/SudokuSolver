@@ -13,17 +13,16 @@ class Cell(object):
         _possible_values (set[int]): A set of values that are possible to write to the cell.
     """
 
-    MAX_VALUE = 9  # TODO rethink if it should be class static
-
-    def __init__(self, row: int, column: int, editable=True, value=0):
+    def __init__(self, row: int, column: int, max_value: int, editable=True, value=0):
         """Initiate a cell. Write arguments to instance attributes and create a set of possible values. Populate the set
-        with values from range <1, MAX_VALUE> if the cell is editable.
+        with values from range <1, max_value> if the cell is editable.
 
         Args:
             row (int): Row parameter of a cell.
             column (int): Column parameter of a cell.
             editable (bool): Defines if object's value can be edited or is permanent. Defaults to True.
             value (int): Value of the cell between 0 (empty) and MAX_VALUE. Defaults to 0.
+            max_value (int): Maximum value that cell can get (sudoku size).
 
         Raises:
             AttributeError: Raise if:
@@ -33,10 +32,10 @@ class Cell(object):
         """
         if editable is False and value == 0:
             raise AttributeError("Cell not editable and without value")
-        elif value < 0 or value > self.MAX_VALUE:
-            raise AttributeError("Incorrect value ({} not in <0,{}>)".format(value, self.MAX_VALUE))
-        elif not(0 <= row < self.MAX_VALUE) or not(0 <= column < self.MAX_VALUE):
-            raise AttributeError("Incorrect row or column ({},{} not in <0,{}>".format(row, column, self.MAX_VALUE))
+        elif value < 0 or value > max_value:
+            raise AttributeError("Incorrect value ({} not in <0,{}>)".format(value, max_value))
+        elif not(0 <= row < max_value) or not(0 <= column < max_value):
+            raise AttributeError("Incorrect row or column ({},{} not in <0,{}>".format(row, column, max_value))
 
         self._editable = editable
         self._value = value
@@ -44,18 +43,18 @@ class Cell(object):
         self._column = column
 
         if editable:
-            self._possible_values = set(range(1, self.MAX_VALUE + 1))
+            self._possible_values = set(range(1, max_value + 1))
         else:
             self._possible_values = set()
 
     @property
     def row(self) -> int:
-        """Return row as integer. Row should be in a range <0, MAX_VALUE-1>."""
+        """Return row as integer."""
         return self._row
 
     @property
     def column(self) -> int:
-        """Return column as integer. Column should be in a range <0, MAX_VALUE-1>."""
+        """Return column as integer."""
         return self._column
 
     @property
@@ -72,13 +71,11 @@ class Cell(object):
     def value(self) -> int:
         """Cell's value as integer.
 
-        Write value if a cell is editable and the value is in a correct range (<0, MAX_VALUE>).
-        Clear a set of possible values if value is not 0.
+        Write value if a cell is editable. Clear a set of possible values if value is not 0.
 
         Raises:
             Attribute Error: Raise if:
             - editable attribute is False
-            - value is not in a range <0, MAX_VALUE>
         """
         return self._value
 
@@ -86,17 +83,21 @@ class Cell(object):
     def value(self, value: int):
         if self._editable is False:
             raise AttributeError("Cell not editable")
-        elif value < 0 or value > self.MAX_VALUE:
-            raise AttributeError("Incorrect value ({} not in <0,{}>)".format(value, self.MAX_VALUE))
+        elif value < 0:
+            raise AttributeError("Value below 0")
         elif value == 0:
             self._value = value
         else:
             self._value = value
             self._possible_values.clear()
 
-    def init_possible_values(self):
-        """Fill the set of possible values with full range <1, MAX_VALUE>."""
-        self._possible_values = set(range(1, 1+self.MAX_VALUE))
+    def init_possible_values(self, max_value):
+        """Fill the set of possible values with full range <1, max_value>.
+
+        Args:
+            max_value: maximum possible value that can be written to the cell.
+        """
+        self._possible_values = set(range(1, 1+max_value))
 
     def intersect_possible_values(self, values: set):
         """Intersect cell's possible values with given set (i.e. set of possible values from region)
@@ -109,7 +110,7 @@ class Cell(object):
     def clear(self):
         """Clear the cell's value if the cell is editable"""
         if self.editable:
-            self.value = 0
+            self._value = 0
 
     def remove_possible_value(self, value: int):
         """Remove possible value from a set (if present)
@@ -288,16 +289,17 @@ class Sudoku(object):
     """Class that contains Sudoku board - two dimensional array of cells.
 
     Attributes:
-        cells (List[List[Cell]]):
-        _size (int)
-        _rect_width (int)
-        _rect_height (int)
-        _undo_redo
+        cells (List[List[Cell]]): List of cells in Sudoku.
+        _size (int): size of the Sudoku.
+        _rect_width (int): Width of each rectangle region (3 for Sudoku 9x9).
+        _rect_height (int): Height of each rectangle region (3 for Sudoku 9x9).
+        _undo_redo (UndoRedo): Container storing actions done on Sudoku.
+        _regions (List[Region]): List of regions (rows, columns, rectangles).
     """
 
     def __init__(self, size=9, cells=None, rect_width=3, rect_height=3):
         if cells is None:
-            self.cells = [[Cell(r, c) for c in range(size)] for r in range(size)]
+            self.cells = [[Cell(r, c, size, True, 0) for c in range(size)] for r in range(size)]
             self._size = size
         else:
             self.cells = cells
@@ -309,8 +311,9 @@ class Sudoku(object):
         self._rect_height = rect_height
 
         rows = columns = self._size
-        rectangles = (self._size ** 2) // (self._rect_width * self._rect_height)  # number of rectangles = board size / rect_size
-        self._regions = [Region() for x in range(rows + columns + rectangles)]  # generate regions for rows, cols, rects
+        rectangles = (self._size ** 2) // (self._rect_width * self._rect_height)  # number of rectangles
+        # = board size / rect_size
+        self._regions = [Region() for _ in range(rows + columns + rectangles)]  # generate regions for rows, cols, rects
 
         for row in range(self._size):
             for col in range(self._size):
@@ -386,7 +389,13 @@ class Sudoku(object):
             - editable attribute is False
             - value is not in a range <0, MAX_VALUE>
         """
-        if self._is_row_and_column_in_range(row, column):
+        if not self._is_row_and_column_in_range(row, column):
+            msg = "Incorrect row or column: {},{}, max: {}".format(row, column, self._size-1)
+            raise AttributeError(msg)
+        elif value < 0 or value > self._size:
+            msg = "Incorrect value: {}, max: {}".format(value, self._size)
+            raise AttributeError(msg)
+        else:
             cell = self.cells[row][column]
             old_value = cell.value
             cell.value = value
@@ -434,6 +443,11 @@ class Sudoku(object):
 
         Use the function after modifying cell's value, clearing its value or undoing action.
         """
+        for column in self.cells:
+            for cell in column:
+                if cell.value == 0:
+                    cell.init_possible_values(self._size)
+
         for region in self._regions:
             region.update_possible_values()
 
@@ -662,6 +676,8 @@ class Exclusion(Pattern):
                 if count == 1:
                     sudoku.set_cell_value(cells_list[0].row, cells_list[0].column, value, self.name())
                     was_changed = True
+                    if solve_one:
+                        break
 
         return was_changed
 
@@ -715,7 +731,6 @@ class BruteForce(Pattern):
         sudoku_solved = None
         patterns = Pattern.get_patterns_without_brute_force()
         METHOD = 'BruteForce'
-        _LOG_COUNTER = 0
 
         def __init__(self, sudoku: Sudoku, row=-1, column=-1, value=-1):
             """Initiate the SudokuNode with sudoku and optional arguments for writing value to a cell.
@@ -753,6 +768,7 @@ class BruteForce(Pattern):
                 solve_again = True
                 while solve_again:
                     solve_again = pattern.solve(self._sudoku, False)
+
             if self._sudoku.is_solved():
                 BruteForce.SudokuNode.sudoku_solved = self._sudoku
                 return True
@@ -839,7 +855,7 @@ class SudokuFactory(object):
         for row in range(0, size):
             for col in range(0, size):
                 value = int(lines[row][col])
-                cells[row][col] = Cell(row, col, False, value) if value else Cell(row, col)
+                cells[row][col] = Cell(row, col, size, False, value) if value else Cell(row, col, size)
 
         # is it ok to shorten it to:
         # cells = [[Cell(row, col, False, int(lines[row][col])) if int(lines[row][col])
@@ -849,7 +865,7 @@ class SudokuFactory(object):
 
 
 if __name__ == '__main__':
-   sud = """
+    sud = """
         293040100
         516230740
         847156000
@@ -860,7 +876,7 @@ if __name__ == '__main__':
         000600005
         000521000
         """
-   sudoku = SudokuFactory.create_from_string(sud)
-   sudoku_solver = SudokuSolver(sudoku)
-   sudoku_solver.solve()
-   print(sudoku_solver.to_string())
+    sudoku = SudokuFactory.create_from_string(sud)
+    sudoku_solver = SudokuSolver(sudoku)
+    sudoku_solver.solve()
+    print(sudoku_solver.to_string())
