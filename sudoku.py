@@ -876,6 +876,7 @@ if __name__ == '__main__':
         000600005
         000521000
         """
+    
     sudoku = SudokuFactory.create_from_string(sud)
     sudoku_solver = SudokuSolver(sudoku)
     sudoku_solver.solve()
