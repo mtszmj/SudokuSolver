@@ -8,83 +8,87 @@ class CellTests(unittest.TestCase):
 
     def test_cell_not_editable_and_value_0(self):
         with self.assertRaises(AttributeError) as cm:
-            cell = Cell(0, 0, editable=False, value=0)
+            cell = Cell(0, 0, 9, editable=False, value=0)
 
         self.assertTrue("Cell not editable and without value" in str(cm.exception))
 
     def test_cell_value_below_0(self):
+        max_value = 9
         with self.assertRaises(AttributeError) as cm:
-            cell = Cell(0, 0, value=-1)
+            cell = Cell(0, 0, max_value, value=-1)
 
-        self.assertTrue("Incorrect value (-1 not in <0,{}>)".format(Cell.MAX_VALUE) in str(cm.exception))
+        self.assertTrue("Incorrect value (-1 not in <0,{}>)".format(max_value) in str(cm.exception))
 
     def test_cell_value_over_MAX(self):
-        value = Cell.MAX_VALUE
+        max_value = 9
         with self.assertRaises(AttributeError) as cm:
-            cell = Cell(0, 0, value=value+1)
+            cell = Cell(0, 0, max_value, value=max_value+1)
 
-        self.assertTrue("Incorrect value ({} not in <0,{}>)".format(value+1, value) in str(cm.exception))
+        self.assertTrue("Incorrect value ({} not in <0,{}>)".format(max_value+1, max_value) in str(cm.exception))
 
     def test_cell_not_editable_and_correct_value(self):
-        cell = Cell(0, 0, editable=False, value=1)
+        cell = Cell(0, 0, 9, editable=False, value=1)
         self.assertFalse(cell.editable)
         self.assertEqual(cell.value, 1)
         self.assertTrue(cell.possible_values == set())
 
     def test_cell_editable_and_correct_value(self):
-        cell = Cell(0, 0, editable=True, value=1)
+        max_value = 9
+        cell = Cell(0, 0, max_value, editable=True, value=1)
         self.assertTrue(cell.editable)
         self.assertEqual(cell.value, 1)
-        self.assertTrue(cell.possible_values == set(range(1, Cell.MAX_VALUE + 1)))
+        self.assertTrue(cell.possible_values == set(range(1, max_value + 1)))
 
     def test_cell_set_value(self):
-        cell = Cell(0, 0, editable=True, value=0)
+        cell = Cell(0, 0, 9, editable=True, value=0)
         cell.value = 1
         self.assertEqual(cell.value, 1)
 
     def test_cell_not_editable_set_value(self):
-        cell = Cell(0, 0, editable=False, value=1)
+        cell = Cell(0, 0, 9, editable=False, value=1)
         with self.assertRaises(AttributeError) as cm:
             cell.value = 2
         self.assertTrue("Cell not editable" in str(cm.exception))
 
     def test_cell_set_incorrect_value(self):
-        value = Cell.MAX_VALUE
-        incorrect_values = [-1, value+1]
+        max_value = 9
+        incorrect_values = [-1]
 
         for v in incorrect_values:
-            cell = Cell(0, 0, editable=True, value=1)
+            cell = Cell(0, 0, max_value, editable=True, value=1)
             with self.assertRaises(AttributeError) as cm:
                 cell.value = v
 
-            msg = "Incorrect value ({} not in <0,{}>)".format(v, value)
+            msg = "Value below 0"
             self.assertTrue(msg in str(cm.exception))
 
     def test_clear_value(self):
-        cell = Cell(0, 0, editable=True, value=1)
+        cell = Cell(0, 0, 9, editable=True, value=1)
         self.assertEqual(cell.value, 1)
         cell.clear()
         self.assertEqual(cell.value, 0)
 
     def test_cell_not_editable_clear_value(self):
-        cell = Cell(0, 0, editable=False, value=1)
+        cell = Cell(0, 0, 9, editable=False, value=1)
         self.assertEqual(cell.value, 1)
         cell.clear()
         self.assertEqual(cell.value, 1)
 
     def test_cell_possible_values(self):
-        cell = Cell(0, 0, editable=True, value=0)
-        possible_values = set(range(1, Cell.MAX_VALUE + 1))
+        max_value = 9
+        cell = Cell(0, 0, max_value, editable=True, value=0)
+        possible_values = set(range(1, max_value + 1))
         self.assertEqual(cell.possible_values, possible_values)
         cell.value = 1
         self.assertEqual(cell.possible_values, set())
         cell.value = 0
-        cell.init_possible_values()
+        cell.init_possible_values(max_value)
         self.assertEqual(cell.possible_values, possible_values)
 
     def test_intersect_possible_values(self):
-        cell = Cell(0, 0, True, 0)
-        intersect_values = set(range(1, Cell.MAX_VALUE + 1))
+        max_value = 9
+        cell = Cell(0, 0, max_value, True, 0)
+        intersect_values = set(range(1, max_value + 1))
         self.assertEqual(cell.possible_values, intersect_values)
 
         intersect_values.remove(1)
@@ -99,14 +103,15 @@ class CellTests(unittest.TestCase):
         cell.intersect_possible_values(intersect_values)
         self.assertEqual(cell.possible_values, intersect_values)
 
-        cell.init_possible_values()
-        self.assertEqual(cell.possible_values, set(range(1, cell.MAX_VALUE + 1)))
+        cell.init_possible_values(max_value)
+        self.assertEqual(cell.possible_values, set(range(1, max_value + 1)))
 
     def test_remove_possible_value(self):
-        cell = Cell(0, 0, True, 0)
-        self.assertEqual(cell.possible_values, set(range(1, cell.MAX_VALUE + 1)))
+        max_value = 9
+        cell = Cell(0, 0, max_value, True, 0)
+        self.assertEqual(cell.possible_values, set(range(1, max_value + 1)))
         cell.remove_possible_value(1)
-        self.assertEqual(cell.possible_values, set(range(2, cell.MAX_VALUE + 1)))
+        self.assertEqual(cell.possible_values, set(range(2, max_value + 1)))
 
 
 class RegionTest(unittest.TestCase):
@@ -126,13 +131,14 @@ class RegionTest(unittest.TestCase):
         self.assertNotEqual(region.cells, [cell_2])
 
     def test_remove_possible_values_if_cell_is_in_region(self):
+        max_value = 9
         region = Region()
-        cell_1 = Cell(0, 0, True, 0)
-        cell_2 = Cell(0, 0, True, 0)
+        cell_1 = Cell(0, 0, max_value, True, 0)
+        cell_2 = Cell(0, 0, max_value, True, 0)
         region.add(cell_1)
 
-        possible_values = set(range(1, Cell.MAX_VALUE + 1))
-        possible_values_without_1 = set(range(2, Cell.MAX_VALUE + 1))
+        possible_values = set(range(1, max_value + 1))
+        possible_values_without_1 = set(range(2, max_value + 1))
 
         self.assertEqual(cell_1.possible_values, possible_values)
         self.assertEqual(cell_1.possible_values, possible_values)
@@ -148,8 +154,10 @@ class RegionTest(unittest.TestCase):
         self.assertEqual(cell_1.possible_values, possible_values_without_1)
 
     def test_update_possible_values(self):
+        max_value = 9
         region = Region()
-        cells = [Cell(0, 0, True, 0), Cell(0, 1, True, 0), Cell(0, 2, True, 0), Cell(0, 3, False, 1)]
+        cells = [Cell(0, 0, max_value, True, 0), Cell(0, 1, max_value, True, 0),
+                 Cell(0, 2, max_value, True, 0), Cell(0, 3, max_value, False, 1)]
         count = len(cells)
         for cell in cells:
             region.add(cell)
@@ -162,29 +170,37 @@ class RegionTest(unittest.TestCase):
                 self.assertEqual(cell.possible_values, set())
 
     def test_is_not_solved(self):
+        max_value = 9
         region = Region()
-        cells = [Cell(0, 0, True, 0), Cell(0, 1, True, 2), Cell(0, 2, True, 3), Cell(0, 3, False, 4)]
+        cells = [Cell(0, 0, max_value, True, 0), Cell(0, 1, max_value, True, 2),
+                 Cell(0, 2, max_value, True, 3), Cell(0, 3, max_value, False, 4)]
         for cell in cells:
             region.add(cell)
         self.assertFalse(region.is_solved())
 
     def test_is_solved(self):
+        max_value = 9
         region = Region()
-        cells = [Cell(0, 0, True, 1), Cell(0, 1, True, 2), Cell(0, 2, True, 3), Cell(0, 3, False, 4)]
+        cells = [Cell(0, 0, max_value, True, 1), Cell(0, 1, max_value, True, 2),
+                 Cell(0, 2, max_value, True, 3), Cell(0, 3, max_value, False, 4)]
         for cell in cells:
             region.add(cell)
         self.assertTrue(region.is_solved())
 
     def test_is_wrong(self):
+        max_value = 9
         region = Region()
-        cells = [Cell(0, 0, True, 2), Cell(0, 1, True, 2), Cell(0, 2, True, 3), Cell(0, 3, False, 4)]
+        cells = [Cell(0, 0, max_value, True, 2), Cell(0, 1, max_value, True, 2),
+                 Cell(0, 2, max_value, True, 3), Cell(0, 3, max_value, False, 4)]
         for cell in cells:
             region.add(cell)
         self.assertFalse(region.is_solved())
 
     def test_is_not_possible_to_solve(self):
+        max_value = 9
         region = Region()
-        cells = [Cell(0, 0, True, 0), Cell(0, 1, True, 2), Cell(0, 2, True, 3), Cell(0, 3, False, 4)]
+        cells = [Cell(0, 0, max_value, True, 0), Cell(0, 1, max_value, True, 2),
+                 Cell(0, 2, max_value, True, 3), Cell(0, 3, max_value, False, 4)]
         for cell in cells:
             region.add(cell)
         cell = region.cells[0]
@@ -255,10 +271,11 @@ class UndoRedoTest(unittest.TestCase):
         self.assertEqual(undo_length, 2)
         self.assertEqual(redo_length, 0)
 
+
 class SudokuTest(unittest.TestCase):
 
     def setUp(self):
-        Cell.MAX_VALUE = 9
+        pass
 
     def test_empty_sudoku(self):
         sudoku = Sudoku()
@@ -268,7 +285,9 @@ class SudokuTest(unittest.TestCase):
                 self.assertEqual(cell.value, 0)
 
     def test_creation_of_sudoku_from_cells(self):
-        cells = [[Cell(x, y, editable=False, value=x+1) if x == y else Cell(x, y) for x in range(9)] for y in range(9)]
+        max_value = 9
+        cells = [[Cell(x, y, max_value, editable=False, value=x+1) if x == y
+                  else Cell(x, y, max_value) for x in range(9)] for y in range(9)]
         sudoku = Sudoku(cells=cells)
 
         for r in range(len(sudoku.cells)):
@@ -281,7 +300,9 @@ class SudokuTest(unittest.TestCase):
                     self.assertEqual(sudoku.cells[r][c].value, 0)
 
     def test_get_cell_value(self):
-        cells = [[Cell(x, y, editable=False, value=x+1) if x == y else Cell(x, y) for x in range(9)] for y in range(9)]
+        max_value = 9
+        cells = [[Cell(x, y, max_value, editable=False, value=x+1) if x == y
+                  else Cell(x, y, max_value) for x in range(9)] for y in range(9)]
         sudoku = Sudoku(cells=cells)
 
         self.assertEqual(sudoku.get_cell_value(3, 3), 4)
@@ -295,7 +316,9 @@ class SudokuTest(unittest.TestCase):
         self.assertTrue("Row or column out of range: <0,{}>".format(sudoku.size - 1) in str(cm.exception))
 
     def test_editable(self):
-        cells = [[Cell(x, y, editable=False, value=x+1) if x == y else Cell(x, y) for x in range(9)] for y in range(9)]
+        max_value = 9
+        cells = [[Cell(x, y, max_value, editable=False, value=x+1) if x == y
+                  else Cell(x, y, max_value) for x in range(9)] for y in range(9)]
         sudoku = Sudoku(cells=cells)
 
         rang = range(len(cells))
@@ -306,22 +329,18 @@ class SudokuTest(unittest.TestCase):
                 else:
                     self.assertTrue(sudoku.is_editable(row, col))
 
-    def test_test(self):
-        cells = [[Cell(x, y, editable=False, value=x+1) if x == y else Cell(x, y) for x in range(9)] for y in range(9)]
-        sudoku = Sudoku(cells=cells)
+    def test_set_cell_value(self):
+        sudoku = Sudoku()
+        size = sudoku.size
+        with self.assertRaises(AttributeError) as cm:
+            sudoku.set_cell_value(0, 0, size+1)
+        msg = "Incorrect value: {}, max: {}".format(size+1, size)
+        self.assertTrue(msg in str(cm.exception))
 
-        sudoku.set_cell_value(0, 1, 4)
-        sudoku.set_cell_value(0, 2, 5)
-        sudoku.set_cell_value(1, 0, 6)
-        sudoku.set_cell_value(1, 2, 7)
-        sudoku.set_cell_value(2, 1, 8)
-        sudoku.set_cell_value(0, 1, 9)
-
-        for region in sudoku._regions:
-            region.update_possible_values()
-
-        for r in sudoku._regions:
-            r.update_possible_values()
+        with self.assertRaises(AttributeError) as cm:
+            sudoku.set_cell_value(0, 0, -1)
+        msg = "Incorrect value: {}, max: {}".format(-1, size)
+        self.assertTrue(msg in str(cm.exception))
 
     def test_solve(self):
         sudoku = Sudoku()
