@@ -835,7 +835,6 @@ class SudokuFactory(object):
             if (len(line) != size) or (size not in SudokuFactory.POSSIBLE_SIZES):
                 raise ValueError("Incorrect input string")
 
-        Cell.MAX_VALUE = size
         cells = [[None for _ in range(0, size)] for _ in range(0, size)]
         for row in range(0, size):
             for col in range(0, size):
